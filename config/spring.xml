@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+                          http://www.springframework.org/schema/context 
+                          http://www.springframework.org/schema/context/spring-context-4.3.xsd
+                        http://www.springframework.org/schema/mvc
+                        http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd">
+
+<!-- 启用注解,支持注解 -->
+	<!-- <context:annotation-config /> -->
+	<!-- 自动扫描的包-->
+	<context:component-scan base-package="com.gys.sm">
+		<!-- 通过注解去过滤被扫描的类 -->
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Repository" />
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Service" />
+	</context:component-scan>
+	<!-- 监听器 -->
+	<!-- <bean class="com.item.listener.SystemInitListener" /> -->
+	<!-- 加载数据库连接配置文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties" system-properties-mode="FALLBACK"/>
+	
+	<!-- 阿里 druid数据库连接池 -->
+	<bean id="dataSource1" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close">
+		<property name="driverClassName" value="${ds1.driverClassName}" />
+        <property name="url" value="${ds1.url}" />
+        <property name="username" value="${ds1.username}" />
+        <property name="password" value="${ds1.password}" />
+        <!-- 连接初始值，连接池启动时创建的连接数量的初始值 -->
+        <property name="initialSize" value="${ds1.initialSize}" />
+        <!-- 连接池的最大值，同一时间可以从池分配的最多连接数量，0时无限制 -->
+        <property name="maxActive" value="${ds1.maxActive}" />
+        <!-- 最大空闲值.当经过一个高峰时间后，连接池可以慢慢将已经用不到的连接慢慢释放一部分，一直减少到maxIdle为止 ，0时无限制-->
+        <property name="maxIdle" value="${ds1.maxIdle}" />
+        <!-- 最小空闲值.当空闲的连接数少于阀值时，连接池就会预申请去一些连接，以免洪峰来时来不及申请 -->
+        <property name="minIdle" value="${ds1.minIdle}" />
+        <!-- 是否对已备语句进行池管理（布尔值），是否对PreparedStatement进行缓存 -->
+        <property name="poolPreparedStatements" value="true" />
+	</bean>
+	<!-- 阿里 druid数据库连接池 -->
+	<bean id="dataSource2" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close">
+		<property name="driverClassName" value="${ds2.driverClassName}" />
+        <property name="url" value="${ds2.url}" />
+        <property name="username" value="${ds2.username}" />
+        <property name="password" value="${ds2.password}" />
+        <!-- 连接初始值，连接池启动时创建的连接数量的初始值 -->
+        <property name="initialSize" value="${ds2.initialSize}" />
+        <!-- 连接池的最大值，同一时间可以从池分配的最多连接数量，0时无限制 -->
+        <property name="maxActive" value="${ds2.maxActive}" />
+        <!-- 最大空闲值.当经过一个高峰时间后，连接池可以慢慢将已经用不到的连接慢慢释放一部分，一直减少到maxIdle为止 ，0时无限制-->
+        <property name="maxIdle" value="${ds2.maxIdle}" />
+        <!-- 最小空闲值.当空闲的连接数少于阀值时，连接池就会预申请去一些连接，以免洪峰来时来不及申请 -->
+        <property name="minIdle" value="${ds2.minIdle}" />
+        <!-- 是否对已备语句进行池管理（布尔值），是否对PreparedStatement进行缓存 -->
+        <property name="poolPreparedStatements" value="true" />
+	</bean>
+	
+	
+	<bean id="dataSource" class="com.gys.sm.item.util.DbcontextHolder"><!-- 这里写选择数据源的类地址 下面跟着给出-->
+        <property name="defaultTargetDataSource" ref="dataSource1"/><!-- 设置默认为此mySqlDataSource数据源-->
+        <property name="targetDataSources">
+            <map>
+                <entry key="ds1" value-ref="dataSource1"/>
+                <entry key="ds2" value-ref="dataSource2"/>
+            </map>
+        </property>
+    </bean>
+	<!-- 数据源,注入我们所需要的数据源 -->
+	<!-- <bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean" >
+		<property name="jndiName">
+			<value>java:comp/env/jdbc/springmvc-mybatis</value>
+		</property>
+	</bean> -->
+	<!-- MyBatis的SqlsessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" scope="prototype">
+		<!-- mapper文件配置 -->
+		<property name="mapperLocations" value="classpath*:com/gys/sm/**/mapper/*-mapper.xml" />
+		<!-- 数据源 --> 
+		<property name="dataSource" ref="dataSource" />
+		<!-- mybatis的配置文件 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml" />
+	</bean>
+	<!-- sqlSessionTemplate -->
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate" scope="prototype">
+		<constructor-arg index="0" ref="sqlSessionFactory"/>
+	</bean>
+	<!--事务管理  -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<!-- 使用注解管理事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" />
+	
+	
+	<!-- 采用自动扫描方式 创建 mapper bean -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com" />
+		<property name="sqlSessionTemplateBeanName" value="sqlSessionTemplate" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository" />
+	</bean>
+	<!-- 缓存项目的数据 -->
+	<bean class="com.gys.sm.item.listener.SystemInitListener" />
+</beans>
